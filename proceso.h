@@ -9,4 +9,7 @@ typedef struct _proceso{
     int subdivision; // subdivision
 }PROCESO;
 
+PROCESO *create_process(int _pid, char type, int time, int division, int subdivision);
+
+
 #endif
