@@ -2,8 +2,6 @@
 #include <sys/shm.h>
 #include "proceso.h"
 
-#define SHM_KEY 0x1234
-
 int main(int argc, char **argv)
 {
 	int shmid;
