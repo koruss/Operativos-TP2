@@ -8,3 +8,8 @@
 ## Links Terror
 
 - https://www.lastdragon.net/?p=220
+
+## Comandos para correr las varas
+gcc -o main main.c -lpthread
+
+./main
