@@ -1,8 +1,10 @@
 #Manual
 inicializador
+finalizador
 *qbs
 *qbs.user
 /build-Operativos-TP2*
+/.vscode
 
 # Autogenerado
 *~

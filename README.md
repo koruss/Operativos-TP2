@@ -3,7 +3,11 @@
 ## To Do
 
 - Leer sobre POSIX semaforos y memoria compartida
--
+- Proceso finalizador: cerrar los procesos que aun no se han programado.
+- Proceso finalizador: cerrar el archivo de bitacora.
+
+## Terminado
+- Proceso finalizador: liberar la memoria compartida.
 
 ## Links Terror
 
