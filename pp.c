@@ -40,9 +40,10 @@ void* allocateProcess(void *process){
 void* openSharedMemory(){
     int shmid;
     int *size_buf;
-    shmid = shmget(BUFF_SIZE_KEY, sizeof(PROCESO) * 100, 0777 | IPC_CREAT);
+    shmid = shmget(BUFF_SIZE_KEY, sizeof(int), 0777 | IPC_CREAT);
+    printf("ID de la memoria %d\n\n", shmid);
     size_buf = (int*) shmat(shmid, NULL, 0);
-    printf("Tamaño: %d", size_buf);
+    printf("Tamaño: %d", *size_buf);
     shmdt(size_buf);
 }
 

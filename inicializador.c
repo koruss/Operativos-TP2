@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <sys/shm.h>
+#include <string.h>
 #include "proceso.h"
 
 int main (int argc, char **argv)
@@ -33,8 +34,9 @@ int main (int argc, char **argv)
         buf_size_mem = shmget(BUFF_SIZE_KEY, sizeof(int), 0777 | IPC_CREAT);
         shmp_buf = (int *)shmat(buf_size_mem,NULL,0);
 
-        shmp_buf = cantidad;
-        printf("La memoria en inicializador : %d \n", shmp_buf);
+        memcpy(shmp_buf, &cantidad, sizeof(int));
+        //shmp_buf = cant
+        printf("La memoria en inicializador : %d \n", *shmp_buf);
         //shmp_buf = sprintf(cantidad, sizeof(int), "%d");
 
         return 0;         
