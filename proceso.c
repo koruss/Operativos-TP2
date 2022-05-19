@@ -8,13 +8,14 @@
 4= dead
 */
 
-PROCESO *create_process(int _pid, char _type, int _time, int _division, int _subdivision,int state){
+PROCESO *create_process(int _pid, char _type, int _time, int _division, int _subdivision,int _state){
     PROCESO *proceso = (PROCESO *)malloc(sizeof(PROCESO));
     proceso->pid = _pid;
     proceso->type = _type;
     proceso->time = _time;
     proceso->division = _division;
     proceso->subdivision = _subdivision;
+    proceso->state = _state;
     return proceso;
 
 

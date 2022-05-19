@@ -9,6 +9,7 @@ typedef struct PROCESO{
     int pid;
     char type; // type of process P = pagination, S = Segmentation
     int time; // time
+    int state;
     int division; // division
     int subdivision; // subdivision
 }PROCESO;

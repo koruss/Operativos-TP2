@@ -39,5 +39,7 @@ int main (int argc, char **argv)
         printf("La memoria en inicializador : %d \n", *shmp_buf);
         //shmp_buf = sprintf(cantidad, sizeof(int), "%d");
 
-        return 0;         
+        return 0;
+
+
 }
