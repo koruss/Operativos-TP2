@@ -3,9 +3,9 @@
 /*
 1= ready
 2= searching
-2= running(sleep)
-3= terminated
-4= dead
+3= running(sleep)
+4= terminated
+5= dead(blocked)
 */
 
 PROCESO *create_process(int _pid, char _type, int _time, int _division, int _subdivision,int _state){
@@ -17,4 +17,8 @@ PROCESO *create_process(int _pid, char _type, int _time, int _division, int _sub
     proceso->subdivision = _subdivision;
     proceso->state = _state;
     return proceso;
+}
+
+void toString(PROCESO *proceso){
+    printf("PID: %d\n Tipo: %s\n Tiempo: %d\n",proceso->pid, proceso->type, proceso->time);
 }
