@@ -12,6 +12,7 @@
 #define DEBUG 1
 
 static int PID = 0;
+static int nprocess = 0;
 int *size_buf;
 int shmid, shm2id, shm_size_id;
 sem_t mutex;
@@ -19,6 +20,7 @@ PROCESO *crit_region;
 PROCESO *bitacora;
 FILE *file;
 int opcion;
+time_t t;
 
 typedef struct _Node
 {
@@ -36,16 +38,34 @@ _Node *createNode(pthread_t thread,PROCESO *process)
     return nodito;
 }
 
+//chequea si se puede guardar el proceso en la memoria y se cambia el estado
+int checkMainMemory(PROCESO *proceso){
+    
+}
+
 void* allocateProcess(void *process){
     struct PROCESO *myProcess = (struct PROCESO*)process;
     printf("Allocating process %d \n",myProcess->pid);
     sem_wait(&mutex);
     //se cambia el estado del proceso
-    //myProcess.
+    myProcess->state=2;
+    //busca en la memoria compartida a ver si puede guardarse
+    t= time(NULL);
+    if (1 == checkMainMemory(myProcess))//si encontro espacio
+        fprintf(file,"PID: %d, Accion: running, Tipo: Asignacion, hora: %d Segmentos: %d", myProcess->pid,t,myProcess->division);
+    else{
+        fprintf(file,"PID: %d, Accion: running, Tipo: Asignacion, hora: %d Segmentos: %d", myProcess->pid,t,myProcess->division);
+    }
+    
+
+
+
     
 
     return NULL;
 }
+
+
 
 void* openSharedMemory(){
     int mem_size;
@@ -98,9 +118,9 @@ void processCreator(int type)
         
         // se guarda el proceso en la memoria compartida que tiene todas las weas
         //memcpy(bitacora, node->proceso, sizeof(PROCESO *));//agregar el proceso a la memoria de la bitacora
-        time_t t;
+        
         t= time(NULL);
-
+        //se guarda el proceso en el log
         if(opcion == 1) fprintf(file,"PID: %d, Accion: ready, Tipo: Asignacion, hora: %d Paginas: %d" , procesito->pid,t,procesito->division);
         else{
             fprintf(file,"PID: %d, Accion: ready, Tipo: Asignacion, hora: %d Segmentos: %d", procesito->pid,t,procesito->division);

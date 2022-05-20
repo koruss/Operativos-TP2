@@ -17,6 +17,4 @@ PROCESO *create_process(int _pid, char _type, int _time, int _division, int _sub
     proceso->subdivision = _subdivision;
     proceso->state = _state;
     return proceso;
-
-
 }

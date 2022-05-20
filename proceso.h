@@ -17,4 +17,6 @@ typedef struct PROCESO{
 //PROCESO *create_process(int _pid, char _type, int _time, int _division, int _subdivision);
 
 
+
+
 #endif
