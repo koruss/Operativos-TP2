@@ -1,12 +1,13 @@
 #Manual
 inicializador
 finalizador
+pp
+bitacora.log
 *qbs
 *qbs.user
 /build-Operativos-TP2*
 /.vscode
 
-pp
 
 # Autogenerado
 *~

@@ -5,18 +5,18 @@
 
 int main(int argc, char **argv)
 {
-	int shmid, shm2id, shm_size_id, cantidad, crit_reg_size;
-	int *size_buf;
+	int shmid, shm2id, shm_size_id, size_t, buffer_size;
+	int *shm_size_buf;
 
-    // Attach a la memoria compartida que contiene el tamaño ingresado por el usuario.
+    // Attach a la memoria compartida que contiene la cantidad ingresada por el usuario.
     shm_size_id = shmget(BUFF_SIZE_KEY, sizeof(int), 0777 | IPC_CREAT);
-    size_buf = (int*) shmat(shm_size_id, NULL, 0);
-    cantidad = *size_buf;
-    crit_reg_size = sizeof(PROCESO)*cantidad;
-    shmdt(size_buf);
+    shm_size_buf = (int*) shmat(shm_size_id, NULL, 0);
+    size_t = *shm_size_buf;
+	buffer_size = sizeof(int) * size_t * 3;
+    shmdt(shm_size_buf);
 
-	shmid = shmget(SHM_KEY, crit_reg_size , 0777 | IPC_CREAT);
-    shm2id = shmget(SHM2_KEY, crit_reg_size*1000 , 0777 | IPC_CREAT);
+	shmid = shmget(SHM_KEY, buffer_size , 0777 | IPC_CREAT);
+    shm2id = shmget(SHM2_KEY, sizeof(PROCESO)*SEC_MEM_SIZE, 0777 | IPC_CREAT);
 
 	if(DEBUG){
 		printf("%d, %d, %d", shmid, shm2id, shm_size_id);
