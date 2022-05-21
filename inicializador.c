@@ -2,7 +2,6 @@
 #include <sys/shm.h>
 #include <string.h>
 #include "bitacora.h"
-#include "bitacora.c"
 #include "proceso.h"
 
 int main(int argc, char **argv)
@@ -38,6 +37,10 @@ int main(int argc, char **argv)
 	memcpy(shm_size_buf, &size_t, sizeof(int));
 	// Detach de la memoria compartida.
     shmdt(shm_size_buf);
+
+	if(DEBUG){
+		printf("Shared memory IDs: %d, %d, %d\n", shmid, shm2id, shm_size_id);
+	}
 	
 	if (shmid == -1 || shm2id == -1 || shm_size_id == -1)
 	{
@@ -52,6 +55,5 @@ int main(int argc, char **argv)
 
 	printf("Cerrando el programa...\n\n");
 	
-
 	return 0;
 }
