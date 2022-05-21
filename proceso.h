@@ -5,6 +5,7 @@
 #define SHM_KEY 0x1234
 #define SHM2_KEY 0x1235
 #define BUFF_SIZE_KEY 0x1236
+#define SEC_MEM_SIZE 1000
 
 typedef struct PROCESO{
     int pid;
