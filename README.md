@@ -13,6 +13,10 @@
 
 - https://www.lastdragon.net/?p=220
 
+- https://iq.opengenus.org/inter-process-communication-shared-memory/
+
+- https://www.tutorialspoint.com/inter_process_communication/inter_process_communication_shared_memory.htm
+
 ## Comandos para correr las varas
 gcc -o main main.c -lpthread
 
