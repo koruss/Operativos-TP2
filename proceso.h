@@ -9,6 +9,7 @@
 #define SHM2_KEY 0x1235
 #define BUFF_SIZE_KEY 0x1236
 #define SEC_MEM_SIZE 1000
+#define TERC_MEM_SIZE 5
 #define SEM_NAME "sem_tp2"
 
 /* Estados posibles para un proceso:

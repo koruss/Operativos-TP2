@@ -18,7 +18,7 @@ pthread_t tid0;
 int *shm_size_buf;
 int (*shm_primary)[3];
 PROCESO *shm_secondary;
-int shmid, shm2id, shm_size_id, usr_size, buffer_size, usr_choice;
+int shmid, shm2id, shm3id, usr_size, buffer_size, usr_choice;
 
 
 struct shmseg {
@@ -116,8 +116,9 @@ void print_process_state(){
 
 void print_help(){
     printf("\n****Menu de Ayuda****\n");
-    printf("\tPresione M para ver el estado de la memoria.\n");
-    printf("\tPresione P para ver el estado de los procesos.\n");
+    printf("\tPresione m para ver el estado de la memoria.\n");
+    printf("\tPresione p para ver el estado de los procesos.\n");
+    printf("\tPresione q para salir del programa.\n");
 }
 
 
@@ -134,6 +135,8 @@ void start_keyboard_daemon(){
             print_memory_state();
         if(user_input == 'p')
             print_process_state();
+        if(user_input == 'q')
+            exit(0);
     }
     pthread_exit(0);
     
@@ -142,10 +145,18 @@ void start_keyboard_daemon(){
 void *openSharedMemory()
 {
     // Attach a la memoria compartida que contiene el tamaño ingresado por el usuario.
-    shm_size_id = shmget(BUFF_SIZE_KEY, sizeof(int), 0777);
-    shm_size_buf = (int *)shmat(shm_size_id, NULL, 0);
-    usr_size = *shm_size_buf;
+    shm3id = shmget(BUFF_SIZE_KEY, sizeof(int)*TERC_MEM_SIZE, 0777);
+    shm_size_buf = (int *)shmat(shm3id, NULL, 0);
+    //usr_size = *shm_size_buf;
+    //num_proc = usr_size;
+
+    usr_size = shm_size_buf[0];
     num_proc = usr_size;
+
+    shm_size_buf[3] = getpid();
+
+
+
     buffer_size = sizeof(int) * usr_size * 3;
     // Attach a la memoria que va a contener a todos los procesos.
     shmid = shmget(SHM_KEY, buffer_size, 0777);
@@ -157,7 +168,7 @@ void *openSharedMemory()
     {
         printf("ID de la memoria compartida primaria: %d\n", shmid);
         printf("ID de la memoria compartida secundaria: %d\n", shm2id);
-        printf("ID de la memoria compartida terciaria: %d\n", shm_size_id);
+        printf("ID de la memoria compartida terciaria: %d\n", shm3id);
     }
 }
 
@@ -166,4 +177,8 @@ int main (int argc, char **argv)
 
     openSharedMemory();
     start_keyboard_daemon();
+
+    shmdt(shm_size_buf);
+    shmdt(shm_primary);
+    shmdt(shm_secondary);
 }

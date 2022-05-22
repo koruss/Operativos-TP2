@@ -5,16 +5,17 @@
 #include <sys/queue.h>
 #include <semaphore.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <string.h>
 #include "proceso.h"
 #include "bitacora.h"
 
 static int PID = 0;
 static int num_proc = 0;
-int *shm_size_buf;
+int *shm_tertiary;
 int (*shm_primary)[3];
 PROCESO *shm_secondary;
-int shmid, shm2id, shm_size_id, usr_size, buffer_size, usr_choice;
+int shmid, shm2id, shm3id, usr_size, buffer_size, usr_choice;
 
 // Chequea la memoria principal, y busca espacios disponibles. Utilizando
 // paginación. Si hay campo para colocar el proceso, retorna el índice inicial
@@ -79,44 +80,6 @@ void checkMemSegment(int *indices, PROCESO *proceso)
     indices[0] = -1;
     return;
 }
-
-// int * checkMemSegment2(PROCESO *proceso)
-// {
-//     int(*mem_ptr)[3];
-//     int seg_counter = 0;
-//     int tmp_list[proceso->size];
-//     memset( tmp_list, 666, ((proceso->size)*sizeof(int)));
-//     for (int k= 0; k< proceso->size; k++){
-//         printf("- %d\t", tmp_list[k]);
-//     }
-
-//     // Conseguir el puntero de la memoria principal en el primero espacio.
-//     mem_ptr = shm_primary;
-//     for (int i = 0; i < usr_size; i++)
-//     {
-//         if (mem_ptr[i][0] == -1){
-//             tmp_list[seg_counter] = i;
-//             seg_counter++;
-            
-//         }
-//             // Conseguir la dirección del segmento si hay campo disponible.
-            
-//         if (seg_counter == (proceso->size - 1)){
-//             if(DEBUG){
-//                 printf("Indices seleccionados para los segmentos de PID %d\n", proceso->pid);
-//                 for(int j = 0; j<proceso->size;j++){
-//                     printf(" Indice: %d\n", tmp_list[j]);
-//                 }
-//             }
-//             // Retornar si sí hay campo.
-//             return tmp_list;
-//         }
-//     }
-//     // Retornar si no hay campo.
-//     memset( tmp_list, -1, ((proceso->size)*sizeof(int)));
-//     return tmp_list;
-// }
-
 
 // Inserta un proceso a la memoria principal, utilizando paginación.
 void insertMemPage(int idx, PROCESO *proceso)
@@ -262,13 +225,20 @@ void *allocateProcess(void *process)
     return NULL;
 }
 
-void *openSharedMemory()
+void *openSharedMemory(int mode)
 {
     // Attach a la memoria compartida que contiene el tamaño ingresado por el usuario.
-    shm_size_id = shmget(BUFF_SIZE_KEY, sizeof(int), 0777);
-    shm_size_buf = (int *)shmat(shm_size_id, NULL, 0);
-    usr_size = *shm_size_buf;
+    int _shm3id = shmget(BUFF_SIZE_KEY, sizeof(int)*TERC_MEM_SIZE, 0777);
+
+    shm_tertiary = (int *)shmat(_shm3id, NULL, 0);
+    usr_size = shm_tertiary [0];
     num_proc = usr_size;
+    // Guardar el modo de operación. (Paginación o segmentación)
+    shm_tertiary[1] = mode;
+    //guarda el pid del proceso en la memoria compartida terciaria 
+    shm_tertiary[4] = getpid();
+
+
     buffer_size = sizeof(int) * usr_size * 3;
     // Attach a la memoria que va a contener a todos los procesos.
     shmid = shmget(SHM_KEY, buffer_size, 0777);
@@ -281,7 +251,7 @@ void *openSharedMemory()
     {
         printf("ID de la memoria compartida primaria: %d\n", shmid);
         printf("ID de la memoria compartida secundaria: %d\n", shm2id);
-        printf("ID de la memoria compartida terciaria: %d\n", shm_size_id);
+        printf("ID de la memoria compartida terciaria: %d\n", shm3id);
     }
 }
 
@@ -320,8 +290,8 @@ void processCreator(int mode)
 
         pthread_create(&thread, NULL, allocateProcess, (void *)procesito); // se crea el thread
         fflush(stdout);
-        // int sleepTime = (rand() % 31) + 30; // sleeptime between (30 - 60) seconds
-        sleep(10);
+        int sleepTime = (rand() % 31) + 30; // sleeptime between (30 - 60) seconds
+        sleep(sleepTime);
     }
 }
 
@@ -332,12 +302,12 @@ int main(int argc, char **argv)
     printf("\t 2. Segmentación\n");
     scanf("%d", &usr_choice);
 
-    openSharedMemory();
+    openSharedMemory(usr_choice);
 
     processCreator(usr_choice);
 
     // Detach a todas las memorias compartidas
-    shmdt(shm_size_buf);
+    shmdt(shm_tertiary);
     shmdt(shm_primary);
     shmdt(shm_secondary);
 }
