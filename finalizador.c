@@ -10,7 +10,7 @@ int main(int argc, char **argv)
 	int shmid, shm2id, shm_size_id, usr_size, buffer_size;
 
 	// Conseguir el id de la memoria compartida.
-    shm_size_id = shmget(BUFF_SIZE_KEY, sizeof(int), 0777 | IPC_CREAT);
+    shm_size_id = shmget(BUFF_SIZE_KEY, sizeof(int), 0777);
     // Attach a la memoria compartida que contiene la cantidad ingresada por el usuario.
     shm_size_buf = (int*) shmat(shm_size_id, NULL, 0);
     usr_size = *shm_size_buf;
@@ -19,8 +19,8 @@ int main(int argc, char **argv)
     shmdt(shm_size_buf);
 
 	// Conseguir el id de la memoria compartida.
-	shmid = shmget(SHM_KEY, buffer_size , 0777 | IPC_CREAT);
-    shm2id = shmget(SHM2_KEY, sizeof(PROCESO)*SEC_MEM_SIZE, 0777 | IPC_CREAT);
+	shmid = shmget(SHM_KEY, buffer_size , 0777);
+    shm2id = shmget(SHM2_KEY, sizeof(PROCESO)*SEC_MEM_SIZE, 0777);
 
 	if(DEBUG){
 		printf("Shared memory IDs: %d, %d, %d\n", shmid, shm2id, shm_size_id);

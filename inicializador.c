@@ -10,7 +10,7 @@
 void init_main_mem(int _shmid, int _usr_size){
 	int (*mem_ptr)[3];
 	// Attach a la memoria compartida.
-    mem_ptr = (int*) shmat(_shmid, NULL, 0);
+    mem_ptr = (int(*)[3]) shmat(_shmid, NULL, 0);
 	for(int i = 0; i < _usr_size; i++){
 		for(int j = 0; j < 3; j++){
 			mem_ptr[i][j] = -1;
@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 	printf("Ingrese la cantidad de páginas o segmentos a ser asignados: ");
 	scanf("%d", &usr_size);
 
-	// El tamaño del buffer principal va a ser un arreglo de arreglos. Con la el
+	// El tamaño del buffer principal va a ser un arreglo de arreglos. Con el
 	// tamaño especificado por el usuario por 3 enteros (pid, cantidad de
 	// páginas/segmentos, número de página/segmento)
 	buffer_size = sizeof(int) * usr_size * 3;

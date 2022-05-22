@@ -12,4 +12,5 @@ PROCESO *create_process(int _pid, int _type, int _time, int _size, int _state){
 
 void print_proc(PROCESO *proceso){
     printf("PID: %d\n Tipo: %d\n Tiempo: %d\n",proceso->pid, proceso->type, proceso->time);
+    printf(" Tamaño: %d\n", proceso->size);
 }

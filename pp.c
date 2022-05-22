@@ -10,84 +10,275 @@
 #include "bitacora.h"
 
 static int PID = 0;
-static int nprocess = 0;
+static int num_proc = 0;
 int *shm_size_buf;
 int (*shm_primary)[3];
 PROCESO *shm_secondary;
-int shmid, shm2id, shm_size_id, usr_size, buffer_size, usr_choice;;
-sem_t mutex;
-FILE *file;
-time_t t;
+int shmid, shm2id, shm_size_id, usr_size, buffer_size, usr_choice;
 
-// Chequea si se puede guardar el proceso en la memoria y se cambia el estado.
-int checkMainMemory(PROCESO *proceso){
-	//int (*mem_ptr)[3];
-    PROCESO (*mem_ptr)[usr_size] = shm_secondary;
-	// Attach a la memoria compartida.
-    // mem_ptr = shm_primary;
-	// for(int i = 0; i < usr_size; i++){
-    //     printf("pid: %d\n", mem_ptr[i][0]);
-    //     printf("\t cantpag: %d\n", mem_ptr[i][0]);
-    //     printf("\t numpag: %d\n", mem_ptr[i][0]);
-	// }
-    mem_ptr[1]->pid =0;
-    mem_ptr[0]->pid = 69;
-    print_proc(mem_ptr[0]);
-    print_proc(mem_ptr[1]);
-
-    return 0;
+// Chequea la memoria principal, y busca espacios disponibles. Utilizando
+// paginación. Si hay campo para colocar el proceso, retorna el índice inicial
+// para insertar. Si no hay campo, retorna -1.
+int checkMemPage(PROCESO *proceso)
+{
+    int first_idx = 0;
+    int consec_cells = 0;
+    int(*mem_ptr)[3];
+    // Conseguir el puntero de la memoria principal en el primero espacio.
+    mem_ptr = shm_primary;
+    for (int i = 0; i < usr_size; i++)
+    {
+        // Si la celda actual está vacía.
+        if (mem_ptr[i][0] == -1)
+        {
+            consec_cells++;
+            if (consec_cells == proceso->size)
+                return first_idx;
+        }
+        // Cambiar el índice actual y reiniciar el contador de celdas
+        // consecutivas.
+        else
+        {
+            first_idx = i + 1;
+            consec_cells = 0;
+        }
+    }
+    return -1;
 }
 
-int releaseMemory(PROCESO *proceso){
-    return 1;
+// Chequea la memoria principal, y busca espacios disponibles. Utilizando
+// segmentación. Si hay campo, la función retorna un puntero a un arreglo con
+// las posiciones disponibles para inserción. Si no hay campo, retorna -1.
+void checkMemSegment(int *indices, PROCESO *proceso)
+{
+    int(*mem_ptr)[3];
+    int seg_counter = 0;
+    // Conseguir el puntero de la memoria principal en el primero espacio.
+    mem_ptr = shm_primary;
+
+    for (int i = 0; i < usr_size; i++)
+    {
+        // Conseguir la dirección del segmento si hay campo disponible.
+        if (seg_counter == proceso->size){
+            if(DEBUG){
+                printf("Indices seleccionados para los segmentos de PID %d\n", proceso->pid);
+                for(int j = 0; j<proceso->size;j++){
+                    printf(" Indice: %d\n", indices[j]);
+                }
+            }
+            // Retornar si sí hay campo.
+            return;
+        }
+
+        if (mem_ptr[i][0] == -1){
+            indices[seg_counter] = i;
+            seg_counter++;
+        }
+    }
+    // Retornar si no hay campo.
+    indices[0] = -1;
+    return;
 }
 
-void* allocateProcess(void *process){
-    struct PROCESO *myProcess = (struct PROCESO*)process;
-    printf("Allocating process %d \n",myProcess->pid);
-    sem_wait(&mutex);
-    //se cambia el estado del proceso
-    myProcess->state=2;
-    //busca en la memoria compartida a ver si puede guardarse
-    t= time(NULL);
-    // if (1 == checkMainMemory(myProcess))//si encontro espacio
-    //     fprintf(file,"PID: %d, Accion: En Ejecucion, Tipo: Asignacion, hora: %d Segmentos: %d\n", myProcess->pid,t,myProcess->division);
-    // else{// si no encontro espacio
-    //     fprintf(file,"PID: %d, Accion: Muerto, Tipo: Asignacion, hora: %d Segmentos: %d\n", myProcess->pid,t,myProcess->division);
-    // }
-    // sem_post(&mutex);//devuelve el semaforo
+// int * checkMemSegment2(PROCESO *proceso)
+// {
+//     int(*mem_ptr)[3];
+//     int seg_counter = 0;
+//     int tmp_list[proceso->size];
+//     memset( tmp_list, 666, ((proceso->size)*sizeof(int)));
+//     for (int k= 0; k< proceso->size; k++){
+//         printf("- %d\t", tmp_list[k]);
+//     }
 
-    // sleep(myProcess->time);// se simula la ejecucion del proceso
+//     // Conseguir el puntero de la memoria principal en el primero espacio.
+//     mem_ptr = shm_primary;
+//     for (int i = 0; i < usr_size; i++)
+//     {
+//         if (mem_ptr[i][0] == -1){
+//             tmp_list[seg_counter] = i;
+//             seg_counter++;
+            
+//         }
+//             // Conseguir la dirección del segmento si hay campo disponible.
+            
+//         if (seg_counter == (proceso->size - 1)){
+//             if(DEBUG){
+//                 printf("Indices seleccionados para los segmentos de PID %d\n", proceso->pid);
+//                 for(int j = 0; j<proceso->size;j++){
+//                     printf(" Indice: %d\n", tmp_list[j]);
+//                 }
+//             }
+//             // Retornar si sí hay campo.
+//             return tmp_list;
+//         }
+//     }
+//     // Retornar si no hay campo.
+//     memset( tmp_list, -1, ((proceso->size)*sizeof(int)));
+//     return tmp_list;
+// }
 
-    // sem_wait(&mutex);
-    
-    // if (1 == releaseMemory(myProcess))
-    //     fprintf(file,"PID: %d, Accion: Finalizado, Tipo: Desasignacion, hora: %d Segmentos: %d\n", myProcess->pid,t,myProcess->division);
-    // else{
-    //     perror("Error releasing the process");
-	// 	return NULL;
-    // }
 
-    // sem_post(&mutex);
+// Inserta un proceso a la memoria principal, utilizando paginación.
+void insertMemPage(int idx, PROCESO *proceso)
+{
+    int(*mem_ptr)[3];
+    int page_counter = 1;
+    // Conseguir el puntero de la memoria principal en el primero espacio.
+    mem_ptr = shm_primary;
+    for (int i = idx; i < (idx + proceso->size); i++)
+    {
+        mem_ptr[i][0] = proceso->pid;
+        mem_ptr[i][1] = proceso->size;
+        mem_ptr[i][2] = page_counter;
+        page_counter++;
+    }
+    if (DEBUG)
+    {
+        printf("IDX recibido: %d\n", idx);
+        print_proc(proceso);
+    }
+}
 
-    // pthread_exit(NULL);
+// Inserta un proceso a la memoria principal, utilizando segmentación.
+void insertMemSegment(int *indices, PROCESO *proceso)
+{
+    int(*mem_ptr)[3];
+    // Conseguir el puntero de la memoria principal en el primero espacio.
+    mem_ptr = shm_primary;
+    for(int i = 0; i<proceso->size; i++){
+        mem_ptr[indices[i]][0] = proceso->pid;
+        mem_ptr[indices[i]][1] = proceso->size;
+        mem_ptr[indices[i]][2] = i+1;
+    }
+}
+
+void reset_arr( int *array, int size) {
+    for(int i = 0; i<size; i++)
+        array[i] = 0;
+}
+
+int insertProcess(PROCESO *proceso)
+{
+    // Insertar utilizando paginación.
+    if (usr_choice == 1)
+    {
+        int array_idx = checkMemPage(proceso);
+        // No se encontró espacio disponible para el proceso.
+        if (array_idx == -1)
+        {
+            // Cambiar el estado del proceso a "blocked".
+            proceso->state = 4;
+            return -1;
+        }
+        insertMemPage(array_idx, proceso);
+        // Cambiar el estado del proceso a "running".
+        proceso->state = 2;
+        return 0;
+    }
+    // Insertar utilizando segmentación.
+    else
+    {
+        int arr_size = proceso->size;
+        int indices[arr_size];
+        //int *indices;
+        //indices = checkMemSegment2(proceso);
+
+        reset_arr(indices,arr_size);
+        //memset(indices, 0, arr_size*sizeof(int));
+
+        checkMemSegment(indices, proceso);
+        if (indices[0] == -1)
+        {
+            // Cambiar el estado del proceso a "blocked".
+            proceso->state = 4;
+            return -1;
+        }
+        insertMemSegment(indices, proceso);
+        // Cambiar el estado del proceso a "running".
+        proceso->state = 2;
+        return 0;
+    }
+}
+
+void releaseMemory(PROCESO *proceso)
+{
+    int(*mem_ptr)[3];
+    // Conseguir el puntero de la memoria principal en el primero espacio.
+    mem_ptr = shm_primary;
+
+    if (DEBUG)
+    {
+        printf("Liberando memoria para el proceso: %d\n", proceso->pid);
+    }
+    // Optimización posible: Preguntar a PhD: Kenneth Corrales.
+    for (int i = 0; i < usr_size; i++)
+    {
+        // if(DEBUG){
+        //     printf("PID en memoria: %d\n", mem_ptr[i][0]);
+        //     printf("PID del struct: %d\n", proceso->pid);
+        // }
+        if (mem_ptr[i][0] == proceso->pid)
+        {
+            mem_ptr[i][0] = -1;
+            mem_ptr[i][1] = -1;
+            mem_ptr[i][2] = -1;
+        }
+    }
+}
+
+void *allocateProcess(void *process)
+{
+    struct PROCESO *current_proc = (struct PROCESO *)process;
+    sem_t *semaphore = sem_open(SEM_NAME, 0, 0644, 0);
+    int inserted = -1;
+
+    printf("Asignación del proceso: %d \n", current_proc->pid);
+    // Bloqueo de la región crítica por el semáforo.
+    sem_wait(semaphore);
+    // Cambiar el estado del proceso a "searching".
+    current_proc->state = 1;
+    appendLog(current_proc);
+    inserted = insertProcess(current_proc);
+    appendLog(current_proc);
+    // Desbloqueo de la región crítica por el semáforo.
+    sem_post(semaphore);
+
+    // Ejecutar el proceso.
+    if (inserted == 0)
+    {
+        sleep(current_proc->time);
+
+        // Bloqueo de la región crítica por el semáforo.
+        sem_wait(semaphore);
+        // Cambiar el estado del proceso a "terminated".
+        releaseMemory(current_proc);
+        current_proc->state = 3;
+        appendLog(current_proc);
+        // Desbloqueo de la región crítica por el semáforo.
+        sem_post(semaphore);
+    }
+
+    pthread_exit(NULL);
     return NULL;
 }
 
-void* openSharedMemory(){
+void *openSharedMemory()
+{
     // Attach a la memoria compartida que contiene el tamaño ingresado por el usuario.
-    shm_size_id = shmget(BUFF_SIZE_KEY, sizeof(int), 0777 | IPC_CREAT);
-    shm_size_buf = (int*) shmat(shm_size_id, NULL, 0);
+    shm_size_id = shmget(BUFF_SIZE_KEY, sizeof(int), 0777);
+    shm_size_buf = (int *)shmat(shm_size_id, NULL, 0);
     usr_size = *shm_size_buf;
-	buffer_size = sizeof(int) * usr_size * 3;
+    num_proc = usr_size;
+    buffer_size = sizeof(int) * usr_size * 3;
     // Attach a la memoria que va a contener a todos los procesos.
-    shmid = shmget(SHM_KEY, buffer_size, 0777 | IPC_CREAT);
-    shm_primary = (int*) shmat(shmid, NULL, 0);
+    shmid = shmget(SHM_KEY, buffer_size, 0777);
+    shm_primary = (int(*)[3])shmat(shmid, NULL, 0);
     // Attach a la memoria que va a servir como bitácora de procesos.
-    shm2id = shmget(SHM2_KEY, sizeof(PROCESO)*SEC_MEM_SIZE, 0777 | IPC_CREAT);
-    shm_secondary = (PROCESO*) shmat(shm2id, NULL, 0);
+    shm2id = shmget(SHM2_KEY, sizeof(PROCESO) * SEC_MEM_SIZE, 0777);
+    shm_secondary = (PROCESO *)shmat(shm2id, NULL, 0);
 
-    if(DEBUG){
+    if (DEBUG)
+    {
         printf("ID de la memoria compartida primaria: %d\n", shmid);
         printf("ID de la memoria compartida secundaria: %d\n", shm2id);
         printf("ID de la memoria compartida terciaria: %d\n", shm_size_id);
@@ -96,47 +287,46 @@ void* openSharedMemory(){
 
 void processCreator(int mode)
 {
-    while (PID<SEC_MEM_SIZE)
+    while (PID < SEC_MEM_SIZE)
     {
         pthread_t thread;
         PROCESO *procesito;
-        PROCESO (*tmp_ptr)[usr_size] = shm_secondary;
+        PROCESO *tmp_ptr = shm_secondary;
         int process_time = (rand() % 41) + 20; // El tiempo de vida del proceso.
 
         // Crea el proceso dependiendo del modo. (1 = Paginación y 2 = Segmentación)
-        if (mode == 1){
+        if (mode == 1)
+        {
             int paginas = (rand() % 10) + 1; // calcula entre(1- 10)/
-            procesito = create_process(++PID, 0,process_time, paginas, 0);
+            procesito = create_process(++PID, 0, process_time, paginas, 0);
         }
-        else{
+        else
+        {
             int segments = (rand() % 5) + 1;
-            procesito = create_process(++PID, 1,process_time, segments, 0);
+            procesito = create_process(++PID, 1, process_time, segments, 0);
         }
 
         // Poner al proceso nuevo en bitácora.
         appendLog(procesito);
 
-        printf("Proceso creado con PID: %d\n",procesito->pid);
+        printf("Proceso creado con PID: %d\n", procesito->pid);
 
         // Agregar el proceso a la memoria compartida secundaria.
-        tmp_ptr[PID]->pid = procesito->pid;
-        tmp_ptr[PID]->size = procesito->size;
-        tmp_ptr[PID]->state = procesito->state;
-        tmp_ptr[PID]->time = procesito->time;
-        tmp_ptr[PID]->type = procesito->type;
+        tmp_ptr[PID].pid = procesito->pid;
+        tmp_ptr[PID].size = procesito->size;
+        tmp_ptr[PID].state = procesito->state;
+        tmp_ptr[PID].time = procesito->time;
+        tmp_ptr[PID].type = procesito->type;
 
-        pthread_create(thread,NULL, allocateProcess,(void *)procesito);// se crea el thread
+        pthread_create(&thread, NULL, allocateProcess, (void *)procesito); // se crea el thread
         fflush(stdout);
-        int sleepTime = (rand() % 31) + 30; // sleeptime between (30 - 60) seconds
-        sleep(sleepTime); 
+        // int sleepTime = (rand() % 31) + 30; // sleeptime between (30 - 60) seconds
+        sleep(10);
     }
-
 }
 
 int main(int argc, char **argv)
 {
-    //file = fopen("bitacora.log","w");
-
     printf("Ingrese el algoritmo con el que desear ejecutar las simulacion\n");
     printf("\t 1. Paginación\n");
     printf("\t 2. Segmentación\n");
@@ -144,14 +334,9 @@ int main(int argc, char **argv)
 
     openSharedMemory();
 
+    processCreator(usr_choice);
 
-    //processCreator(usr_choice);
-    PROCESO *sexo = create_process(1, 1, 1, 3, 0);
-    checkMainMemory(sexo);
-    //fclose(file);
-
-
-    //Detach a todas las memorias compartidas
+    // Detach a todas las memorias compartidas
     shmdt(shm_size_buf);
     shmdt(shm_primary);
     shmdt(shm_secondary);
