@@ -4,6 +4,7 @@
 #include <sys/shm.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <string.h>
 #include "proceso.h"
 #include "espia.h"
 
@@ -15,7 +16,7 @@ static int num_proc = 0;
 
 pthread_t tid0;
 
-int *shm_size_buf;
+int *shm_tertiary;
 int (*shm_primary)[3];
 PROCESO *shm_secondary;
 int shmid, shm2id, shm3id, usr_size, buffer_size, usr_choice;
@@ -27,10 +28,6 @@ struct shmseg {
    char buf[BUF_SIZE];
 };
 
-
-
-
-
 //(pid, cantidad de
 // páginas/segmentos, número de página/segmento)
 void print_memory_state(){
@@ -39,19 +36,37 @@ void print_memory_state(){
     char pid[5];
     char proc_size[5];
     char seg_num[5];
+    char mode[9];
+
+    if(shm_tertiary[1] < 1 || shm_tertiary[1] == 1){
+	    strncpy(mode, "página", sizeof(mode));
+    }
+    else{
+	    strncpy(mode, "segmento", sizeof(mode));
+    }
 
     // Conseguir el puntero de la memoria principal en el primero espacio.
     mem_ptr = shm_primary;
     for (int i = 0; i < usr_size ; i++){
-        printf("PID: %d",mem_ptr[i][0]);
-        printf(" Cantidad de Espacios: %d",mem_ptr[i][1]);
-        printf(" Pagina #: %d\n",mem_ptr[i][2]);
+        printf("┃PID: %d",mem_ptr[i][0]);
+        printf(" ┃ # de celdas en memoria: %d",mem_ptr[i][1]);
+        printf(" ┃ # de %s: %d┃\n", mode, mem_ptr[i][2]);
     }  
 }
 
 void print_list(int *lista, int idx){
+    fflush(stdout);
     for(int i = 0; i < idx ; i++){
         printf("\tPID: %d \n" ,lista[i]);
+    }
+}
+
+void print_sec_mem(){
+    PROCESO *tmp_ptr = shm_secondary;
+
+    printf("********LISTA DE MEMORIA SECUNDARIA********\n");
+    for(int i = 1; i<SEC_MEM_SIZE; i++){
+        print_proc(&tmp_ptr[i]);
     }
 }
 
@@ -76,6 +91,9 @@ void print_process_state(){
     for (int i =0; i < SEC_MEM_SIZE; i++ ){
         process_state = tmp_ptr[i].state;
         process_pid = tmp_ptr[i].pid;
+        if(DEBUG){
+            printf("pid:%d|estado:%d\n", process_pid, process_state);
+        }
         switch (process_state)
         {
         case 0:// ready -> esperando por region critica
@@ -96,22 +114,23 @@ void print_process_state(){
             break; 
         case 4:
             dead_process[dead_idx] = process_pid;
+            dead_idx++;
             break;
         default:
-            return;  
+            break;
         }
     }
-    printf( "Informacion de los procesos\n");
-    printf( "\nPID de los procesos actualmente en memoria \n");
-    print_list(running_process,(running_idx-1));
+    printf( "**********Informacion de los procesos**********");
+    printf( "\nPID de los procesos actualmente en ejecución\n");
+    print_list(running_process,(running_idx));
     printf( "\nPID del proceso buscando espacio \n");
-    print_list(searching_process,(searching_idx-1));
-    printf( "\nPID de los procesos bloqueados\n");
-    print_list(ready_process,(ready_idx-1));
+    print_list(searching_process,(searching_idx));
+    printf( "\nPID de los procesos bloqueados (en ready)\n");
+    print_list(ready_process,(ready_idx));
     printf( "\nPID de los procesos muertos(no encontraron espacio)\n");
-    print_list(dead_process,(dead_idx-1));
+    print_list(dead_process,(dead_idx));
     printf( "\nPID de los procesos que ya terminaron su ejecucion \n");
-    print_list(terminated_process,(terminated_idx-1));
+    print_list(terminated_process,(terminated_idx));
 }
 
 void print_help(){
@@ -135,6 +154,8 @@ void start_keyboard_daemon(){
             print_memory_state();
         if(user_input == 'p')
             print_process_state();
+        if(user_input == 'a')
+            print_sec_mem();
         if(user_input == 'q')
             exit(0);
     }
@@ -146,14 +167,14 @@ void *openSharedMemory()
 {
     // Attach a la memoria compartida que contiene el tamaño ingresado por el usuario.
     shm3id = shmget(BUFF_SIZE_KEY, sizeof(int)*TERC_MEM_SIZE, 0777);
-    shm_size_buf = (int *)shmat(shm3id, NULL, 0);
-    //usr_size = *shm_size_buf;
+    shm_tertiary = (int *)shmat(shm3id, NULL, 0);
+    //usr_size = *shm_tertiary;
     //num_proc = usr_size;
 
-    usr_size = shm_size_buf[0];
+    usr_size = shm_tertiary[0];
     num_proc = usr_size;
 
-    shm_size_buf[3] = getpid();
+    shm_tertiary[3] = getpid();
 
 
 
@@ -178,7 +199,7 @@ int main (int argc, char **argv)
     openSharedMemory();
     start_keyboard_daemon();
 
-    shmdt(shm_size_buf);
     shmdt(shm_primary);
     shmdt(shm_secondary);
+    shmdt(shm_tertiary);
 }

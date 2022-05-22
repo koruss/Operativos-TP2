@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #define SHM_KEY 0x1234
 #define SHM2_KEY 0x1235
 #define BUFF_SIZE_KEY 0x1236

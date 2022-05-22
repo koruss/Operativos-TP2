@@ -21,6 +21,47 @@ void init_main_mem(int _shmid, int _usr_size)
 			mem_ptr[i][j] = -1;
 		}
 	}
+
+	if (DEBUG)
+	{
+		printf("Contenido de la memoria compartida primaria:\n");
+		for (int i = 0; i < _usr_size ; i++)
+		{
+			printf(" %d, %d, %d\n", mem_ptr[i][0], mem_ptr[i][1], mem_ptr[i][2]);
+		}
+	}
+
+	// Detach de la memoria compartida.
+	shmdt(mem_ptr);
+}
+
+void init_sec_mem(int _shm2id){
+	PROCESO *mem_ptr;
+	// Attach a la memoria compartida.
+	mem_ptr = (PROCESO *)shmat(_shm2id, NULL, 0);
+	// Asignar toda la memoria compartida a -1
+	for (int i = 0; i < SEC_MEM_SIZE; i++)
+	{
+		mem_ptr[i].pid = -1;
+		mem_ptr[i].size = -1;
+		mem_ptr[i].state = -1;
+		mem_ptr[i].time = -1;
+		mem_ptr[i].type = -1;
+	}
+
+	if (DEBUG)
+	{
+		printf("Contenido de la memoria compartida secundaria:\n");
+		for (int i = 0; i < SEC_MEM_SIZE; i++)
+		{
+			printf(" %d, ", mem_ptr[i].pid);
+			printf(" %d, ", mem_ptr[i].size);
+			printf(" %d, ", mem_ptr[i].state);
+			printf(" %d, ", mem_ptr[i].time);
+			printf(" %d\n", mem_ptr[i].type);
+		}
+	}
+
 	// Detach de la memoria compartida.
 	shmdt(mem_ptr);
 }
@@ -31,7 +72,7 @@ void init_terc_mem(int _shm3id, int _usr_size)
 
 	// Attach a la memoria compartida.
 	mem_ptr = (int *)shmat(_shm3id, NULL, 0);
-	// Asignar toda la memoria compartida en -1
+	// Asignar toda la memoria compartida a -1
 	for (int i = 0; i < TERC_MEM_SIZE; i++)
 	{
 		mem_ptr[i] = 0;
@@ -76,6 +117,7 @@ int main(int argc, char **argv)
 	// Esta memoria contiene los structs de los procesos durante el periodo de
 	// ejecución del creador de procesos.
 	shm2id = shmget(SHM2_KEY, sizeof(PROCESO) * SEC_MEM_SIZE, 0777 | IPC_CREAT);
+	init_sec_mem(shm2id);
 
 	// Memoria terciaria
 	// Esta contiene el tamaño de memoria ingresado por el usuario, para que los

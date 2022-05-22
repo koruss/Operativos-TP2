@@ -191,9 +191,16 @@ void releaseMemory(PROCESO *proceso)
 
 void *allocateProcess(void *process)
 {
-    struct PROCESO *current_proc = (struct PROCESO *)process;
+    PROCESO *old_proc = (struct PROCESO *)process;
+    PROCESO *current_proc = &shm_secondary[old_proc->pid];
+
     sem_t *semaphore = sem_open(SEM_NAME, 0, 0644, 0);
     int inserted = -1;
+
+    // Para probar si un proceso está en ready
+    if(DEBUG){
+        sleep(5);
+    }
 
     printf("Asignación del proceso: %d \n", current_proc->pid);
     // Bloqueo de la región crítica por el semáforo.
@@ -201,6 +208,10 @@ void *allocateProcess(void *process)
     // Cambiar el estado del proceso a "searching".
     current_proc->state = 1;
     appendLog(current_proc);
+    // Para probar si un proceso está en searching.
+    if(DEBUG){
+        sleep(10);
+    }
     inserted = insertProcess(current_proc);
     appendLog(current_proc);
     // Desbloqueo de la región crítica por el semáforo.
@@ -291,8 +302,11 @@ void processCreator(int mode)
         pthread_create(&thread, NULL, allocateProcess, (void *)procesito); // se crea el thread
         fflush(stdout);
         int sleepTime = (rand() % 31) + 30; // sleeptime between (30 - 60) seconds
+        if(DEBUG)
+            sleepTime = 5;
         sleep(sleepTime);
     }
+    printf("Se ha llegado al límite de memoria para los PIDs.");
 }
 
 int main(int argc, char **argv)
